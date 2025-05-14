@@ -5,7 +5,14 @@ import { food_list } from "../assets/assets";
 export const StoreContext = createContext(null);
 
 const StoreContextProvider = (props) => {
-  const [cartItems, setCartItems] = useState({});
+  const [cartItems, setCartItems] = useState(() => {
+    const savedCart = localStorage.getItem("cartItems");
+    return savedCart ? JSON.parse(savedCart) : {};
+  });
+
+  useEffect(() => {
+    localStorage.setItem("cartItems", JSON.stringify(cartItems));
+  }, [cartItems]);
 
   const addToCart = (itemId) => {
     setCartItems((prev) => ({
@@ -24,13 +31,26 @@ const StoreContextProvider = (props) => {
     });
   };
 
-  useEffect(() => {
-    console.log("🛒 cartItems:", cartItems);
-  }, [cartItems]);
+  const foodMap = new Map(food_list.map((product) => [product._id, product]));
+
+  const getTotalCartAmount = () => {
+    return Object.keys(cartItems).reduce((total, itemId) => {
+      const quantity = cartItems[itemId];
+      if (quantity > 0) {
+        const itemInfo = foodMap.get(itemId);
+        if (itemInfo) {
+          return total + itemInfo.price * quantity;
+        }
+      }
+      return total;
+    }, 0);
+  };
 
   const contextValue = {
     food_list,
     cartItems,
+    setCartItems,
+    getTotalCartAmount,
     addToCart,
     removeFromCart,
   };
